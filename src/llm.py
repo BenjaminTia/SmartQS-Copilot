@@ -1,8 +1,7 @@
 """LLM layer: plain-language review of the BOQ analysis.
-Provider: OpenRouter zero-cost free models. Primary is NVIDIA Nemotron 3 Nano
-(30B MoE, ~10x faster on the free tier); Nemotron 3 Ultra (550B) as backup.
-If all fail, the caller falls back to the rule-based review. The analysis itself
-(parse, estimate, flags) is deterministic software; the LLM only writes prose."""
+Providers, in order: Groq (llama-3.3-70b, ~1s, free tier) -> OpenRouter free
+(Nemotron Nano 30B) -> rule-based fallback. The analysis itself (parse,
+estimate, flags) is deterministic software; the LLM only writes prose."""
 import json
 import os
 import ssl
@@ -10,16 +9,16 @@ import urllib.request
 
 PROVIDERS = [
     {
+        "name": "groq",
+        "key_var": "GROQ_API_KEY",
+        "url": "https://api.groq.com/openai/v1/chat/completions",
+        "model": "llama-3.3-70b-versatile",
+    },
+    {
         "name": "openrouter-nemotron-nano",
         "key_var": "OPENROUTER_API_KEY",
         "url": "https://openrouter.ai/api/v1/chat/completions",
         "model": "nvidia/nemotron-3-nano-30b-a3b:free",
-    },
-    {
-        "name": "openrouter-nemotron-ultra",
-        "key_var": "OPENROUTER_API_KEY",
-        "url": "https://openrouter.ai/api/v1/chat/completions",
-        "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
     },
 ]
 
@@ -60,7 +59,11 @@ def _call(provider, key, prompt):
     req = urllib.request.Request(
         provider["url"],
         data=payload,
-        headers={"Content-Type": "application/json", "Authorization": f"Bearer {key}"},
+        headers={
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {key}",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/126.0 Safari/537.36",
+        },
     )
     resp = json.loads(urllib.request.urlopen(req, timeout=90, context=ctx).read())
     return resp["choices"][0]["message"]["content"]
