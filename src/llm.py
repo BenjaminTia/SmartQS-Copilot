@@ -54,7 +54,7 @@ def _call(provider, key, prompt):
     payload = json.dumps({
         "model": provider["model"],
         "messages": [{"role": "user", "content": prompt}],
-        "max_tokens": 300,
+        "max_tokens": 2048,
     }).encode()
     req = urllib.request.Request(
         provider["url"],
