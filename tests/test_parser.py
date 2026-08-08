@@ -119,3 +119,19 @@ def test_parse_pdf_falls_back_to_positioned_words(monkeypatch):
     ]
     assert [row["qty"] for row in actual] == [row["qty"] for row in expected]
     assert [row["rate"] for row in actual] == [row["rate"] for row in expected]
+
+
+def test_community_hall_pdf_parses_and_flags():
+    """The professional 5-column PDF (community hall) must parse fully and
+    flag exactly the three planted anomalies: C2 rate, C4 rate, B4 duplicate."""
+    from src.anomalies import detect
+    import src.parser as parser_module
+    path = pathlib.Path("samples/boq_community_hall.pdf")
+    rows = parser_module.enrich(parser_module.parse_pdf(str(path)))
+    assert len(rows) == 24
+    flags = detect(rows)
+    by_item = {(f["type"], f["item"]) for f in flags}
+    assert ("rate", "C2") in by_item
+    assert ("rate", "C4") in by_item
+    assert ("duplicate", "B4") in by_item
+    assert len(flags) == 3

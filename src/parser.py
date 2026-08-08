@@ -114,16 +114,49 @@ def _is_pdf_footer(cells):
     )
 
 
-def _pdf_record(cells):
-    """Convert six extracted table cells into the public parser shape."""
+def _map_pdf_columns(cells):
+    """Map table header cells to fields by keyword. Returns {field: col_index} or None."""
+    aliases = {
+        "section": {"section", "trade"},
+        "item": {"item", "ref", "no.", "no"},
+        "description": {"description", "particulars", "details", "item description"},
+        "unit": {"unit"},
+        "qty": {"qty", "quantity", "quantities"},
+        "rate": {"rate", "price", "amount", "rate (hk$)"},
+    }
+    mapping = {}
+    for col, cell in enumerate(cells):
+        token = _flat_cell(cell).lower().strip()
+        for field, names in aliases.items():
+            if field not in mapping and (token in names or any(n in token for n in names)):
+                mapping[field] = col
+    if "description" in mapping and ("qty" in mapping or "rate" in mapping):
+        return mapping
+    return None
+
+
+def _pdf_record(cells, mapping=None):
+    """Convert extracted table cells into the public parser shape.
+    With a mapping, columns are read by header position (handles 5-col and
+    6-col layouts, any column order). Without one, positional 6-col fallback."""
     cells = [_flat_cell(cell) for cell in cells]
-    if len(cells) < len(FIELDS):
-        cells.extend([""] * (len(FIELDS) - len(cells)))
-    if len(cells) > len(FIELDS):
-        cells = cells[:2] + [" ".join(cells[2:-3])] + cells[-3:]
-    if _is_pdf_header(cells) or _is_pdf_footer(cells):
-        return None
-    section, item, description, unit, qty, rate = cells[:6]
+    if mapping is None:
+        if len(cells) < len(FIELDS):
+            cells.extend([""] * (len(FIELDS) - len(cells)))
+        if len(cells) > len(FIELDS):
+            cells = cells[:2] + [" ".join(cells[2:-3])] + cells[-3:]
+        if _is_pdf_header(cells) or _is_pdf_footer(cells):
+            return None
+        section, item, description, unit, qty, rate = cells[:6]
+    else:
+        if _is_pdf_header(cells) or _is_pdf_footer(cells):
+            return None
+        pick = lambda field: cells[mapping[field]] if mapping.get(field) is not None and mapping[field] < len(cells) else ""
+        section, item, description = pick("section"), pick("item"), pick("description")
+        unit, qty, rate = pick("unit"), pick("qty"), pick("rate")
+        # a row that is itself a repeated header (e.g. page-2 continuation)
+        if re.sub(r"[^a-z]", "", description.lower()) in {"description", "particulars"}:
+            return None
     unit = UNIT_MAP.get(unit.lower(), unit.lower())
     record = {
         "section": section,
@@ -146,8 +179,14 @@ def _records_from_tables(document):
         except (AttributeError, RuntimeError, ValueError):
             continue
         for table in getattr(finder, "tables", []):
-            for cells in table.extract():
-                record = _pdf_record(cells or [])
+            rows = [row or [] for row in table.extract()]
+            mapping = None
+            for cells in rows:
+                mapping = _map_pdf_columns(cells)
+                if mapping:
+                    break
+            for cells in rows:
+                record = _pdf_record(cells, mapping)
                 if record:
                     records.append(record)
     return records
