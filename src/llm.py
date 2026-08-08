@@ -1,5 +1,5 @@
 """LLM layer: plain-language review of the BOQ analysis.
-Providers tried in order: Gemini (free) -> Luna (gpt-5.6-luna via OpenAI) -> DeepSeek.
+Providers tried in order: Gemini (free) -> Luna (gpt-5.6-luna via OpenAI).
 If all fail, the caller falls back to the rule-based review. The analysis itself
 (parse, estimate, flags) is deterministic software; the LLM only writes prose."""
 import json
@@ -19,12 +19,6 @@ PROVIDERS = [
         "key_var": "OPENAI_API_KEY",
         "url": "https://api.openai.com/v1/chat/completions",
         "model": "gpt-5.6-luna",
-    },
-    {
-        "name": "deepseek",
-        "key_var": "DEEPSEEK_API_KEY",
-        "url": "https://api.deepseek.com/chat/completions",
-        "model": "deepseek-chat",
     },
 ]
 

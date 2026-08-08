@@ -207,7 +207,7 @@ if rows:
     # review
     st.markdown('<div class="section-title">🧠 Plain-language review</div>', unsafe_allow_html=True)
     review, status = llm_review(len(rows), est["trades"], flags, est["grand_total"])
-    if status != "llm_ok":
+    if not status.startswith("llm_ok"):
         review = fallback_review(flags, est["grand_total"])
         st.caption(f"Rule-based fallback ({status}).")
     safe_review = review.replace("$", "\\$")
