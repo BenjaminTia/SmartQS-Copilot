@@ -88,15 +88,17 @@ def llm_review(items_count, trades, flags, grand_total):
         "Write amounts like 'HK$2,850' but keep the rest of the text plain."
     )
     keys = _keys()
+    last_error = "no providers configured"
     for provider in PROVIDERS:
         key = keys.get(provider["key_var"], "")
         if not key:
             continue
         try:
             return _call(provider, key, prompt), f"llm_ok ({provider['name']})"
-        except Exception:
+        except Exception as e:
+            last_error = f"{provider['name']}: {str(e)[:120]}"
             continue
-    return None, "llm_unavailable"
+    return None, f"llm_unavailable ({last_error})"
 
 
 def fallback_review(flags, grand_total):

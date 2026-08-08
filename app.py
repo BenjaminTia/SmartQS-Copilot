@@ -209,7 +209,7 @@ if rows:
     review, status = llm_review(len(rows), est["trades"], flags, est["grand_total"])
     if status != "llm_ok":
         review = fallback_review(flags, est["grand_total"])
-        st.caption("Rule-based fallback; LLM review unavailable.")
+        st.caption(f"Rule-based fallback ({status}).")
     safe_review = review.replace("$", "\\$")
     st.markdown(f'<div class="review-panel">{safe_review}</div>', unsafe_allow_html=True)
 
