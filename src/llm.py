@@ -7,6 +7,13 @@ import ssl
 
 
 def _key():
+    # Streamlit Cloud secrets first (deployed env)
+    try:
+        import streamlit as st
+        if hasattr(st, "secrets") and "DEEPSEEK_API_KEY" in st.secrets:
+            return st.secrets["DEEPSEEK_API_KEY"]
+    except Exception:
+        pass
     try:
         for line in open(r"C:\Users\Benjamin\AppData\Local\hermes\.env", encoding="utf-8", errors="ignore"):
             if line.strip().startswith("DEEPSEEK_API_KEY="):
