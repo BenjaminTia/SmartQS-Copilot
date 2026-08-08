@@ -1,4 +1,4 @@
-"""Smart QS Copilot — Streamlit app.
+"""Smart QS Copilot - Streamlit app.
 Upload a BOQ (CSV/Excel/PDF text) -> parse -> estimate -> anomalies -> plain-language review.
 Deploy target: Hugging Face Spaces (free, no server)."""
 import io
@@ -11,7 +11,7 @@ import streamlit as st
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from src.parser import parse_csv, parse_pdf_text, enrich
+from src.parser import enrich, parse_csv, parse_pdf, parse_pdf_text
 from src.estimator import estimate
 from src.anomalies import detect, summary as flag_summary
 from src.llm import llm_review, fallback_review
@@ -35,8 +35,10 @@ if use_sample:
         rows = parse_csv(f.read())
     st.info("Loaded sample BOQ (contains deliberately planted anomalies so you can see the flags).")
 elif uploaded is not None:
-    raw = uploaded.getvalue().decode("utf-8", errors="ignore")
-    if uploaded.name.lower().endswith((".csv", ".txt")):
+    if uploaded.name.lower().endswith(".pdf"):
+        rows = parse_pdf(uploaded.getvalue())
+    elif uploaded.name.lower().endswith((".csv", ".txt")):
+        raw = uploaded.getvalue().decode("utf-8", errors="ignore")
         rows = parse_csv(raw) if uploaded.name.lower().endswith(".csv") else parse_pdf_text(raw)
     else:
         try:
@@ -45,7 +47,7 @@ elif uploaded is not None:
         except Exception as e:
             st.error(f"Could not read {uploaded.name}: {e}")
     if not rows:
-        st.error("No items parsed. For PDF, export text first (MVP limitation).")
+        st.error("No items parsed. Check that the file contains a recognizable BOQ table.")
 
 if rows:
     rows = enrich(rows)

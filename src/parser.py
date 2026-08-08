@@ -1,9 +1,12 @@
-"""BOQ parser: CSV/Excel -> normalized item list.
+"""BOQ parser: CSV, Excel, and PDF to normalized item lists.
 Handles: section, item ref, description, unit, qty, rate.
-CSV/Excel native; PDF text via simple line parsing (MVP)."""
+PDF parsing prefers detected tables and falls back to positioned words."""
 import csv
 import io
+import os
 import re
+
+import fitz
 
 from .rates import match_rate
 
@@ -90,6 +93,154 @@ def parse_pdf_text(text: str):
             "qty": _to_float(qty), "rate": _to_float(rate),
         })
     return rows
+
+
+def _flat_cell(value):
+    """Collapse PDF cell line breaks and repeated whitespace."""
+    return re.sub(r"\s+", " ", _clean(value)).strip()
+
+
+def _is_pdf_header(cells):
+    text = " ".join(_flat_cell(cell).lower() for cell in cells)
+    hits = sum(word in text for word in ("item", "description", "unit", "quantity", "qty", "rate"))
+    return hits >= 3 and "description" in text
+
+
+def _is_pdf_footer(cells):
+    text = " ".join(_flat_cell(cell) for cell in cells).strip()
+    return bool(
+        re.search(r"\bpage\s+\d+(?:\s+of\s+\d+)?\b", text, re.IGNORECASE)
+        or text.lower().startswith("smartqs sample boq")
+    )
+
+
+def _pdf_record(cells):
+    """Convert six extracted table cells into the public parser shape."""
+    cells = [_flat_cell(cell) for cell in cells]
+    if len(cells) < len(FIELDS):
+        cells.extend([""] * (len(FIELDS) - len(cells)))
+    if len(cells) > len(FIELDS):
+        cells = cells[:2] + [" ".join(cells[2:-3])] + cells[-3:]
+    if _is_pdf_header(cells) or _is_pdf_footer(cells):
+        return None
+    section, item, description, unit, qty, rate = cells[:6]
+    unit = UNIT_MAP.get(unit.lower(), unit.lower())
+    record = {
+        "section": section,
+        "item": item,
+        "description": description,
+        "unit": unit,
+        "qty": _to_float(qty),
+        "rate": _to_float(rate),
+    }
+    if not description or (record["qty"] is None and record["rate"] is None):
+        return None
+    return record
+
+
+def _records_from_tables(document):
+    records = []
+    for page in document:
+        try:
+            finder = page.find_tables()
+        except (AttributeError, RuntimeError, ValueError):
+            continue
+        for table in getattr(finder, "tables", []):
+            for cells in table.extract():
+                record = _pdf_record(cells or [])
+                if record:
+                    records.append(record)
+    return records
+
+
+def _line_groups(words, tolerance=3.0):
+    """Group PyMuPDF words into visual lines in reading order."""
+    lines = []
+    for word in sorted(words, key=lambda w: (w[1], w[0])):
+        y = (word[1] + word[3]) / 2
+        if not lines or abs(lines[-1][0] - y) > tolerance:
+            lines.append([y, [word]])
+        else:
+            lines[-1][1].append(word)
+            count = len(lines[-1][1])
+            lines[-1][0] = ((lines[-1][0] * (count - 1)) + y) / count
+    return [sorted(line_words, key=lambda w: w[0]) for _, line_words in lines]
+
+
+def _header_columns(lines):
+    """Find column starts from a BOQ header line."""
+    aliases = {
+        "section": {"section"},
+        "item": {"item", "ref"},
+        "description": {"description", "details"},
+        "unit": {"unit"},
+        "qty": {"quantity", "qty"},
+        "rate": {"rate"},
+    }
+    for index, words in enumerate(lines):
+        found = {}
+        for word in words:
+            token = re.sub(r"[^a-z]", "", word[4].lower())
+            for field, names in aliases.items():
+                if token in names and field not in found:
+                    found[field] = word[0]
+        if len(found) >= 5 and "description" in found:
+            if "section" not in found:
+                found["section"] = min(word[0] for word in words)
+            ordered = [found.get(field) for field in FIELDS]
+            if all(value is not None for value in ordered):
+                return index, ordered
+    return None, None
+
+
+def _records_from_words(document):
+    """Parse pages by assigning positioned words to header-derived x bands."""
+    records = []
+    pending = None
+    for page in document:
+        lines = _line_groups(page.get_text("words"))
+        header_index, starts = _header_columns(lines)
+        if starts is None:
+            continue
+        # Header labels are left aligned at each column start. A small offset
+        # keeps text touching a grid line in the column on its right.
+        boundaries = [start - 2 for start in starts[1:]]
+        for words in lines[header_index + 1:]:
+            full_text = " ".join(word[4] for word in words)
+            if _is_pdf_footer([full_text]) or _is_pdf_header([full_text]):
+                continue
+            cells = [[] for _ in FIELDS]
+            for word in words:
+                center = (word[0] + word[2]) / 2
+                column = sum(center >= boundary for boundary in boundaries)
+                cells[column].append(word[4])
+            values = [" ".join(cell) for cell in cells]
+            record = _pdf_record(values)
+            if record:
+                if pending:
+                    records.append(pending)
+                pending = record
+            elif pending and values[2] and not values[1]:
+                pending["description"] = f'{pending["description"]} {values[2]}'.strip()
+        if pending:
+            records.append(pending)
+            pending = None
+    return records
+
+
+def parse_pdf(pdf_bytes_or_path):
+    """Parse a BOQ PDF from bytes, a path, or a path-like object."""
+    if isinstance(pdf_bytes_or_path, (str, os.PathLike)):
+        document = fitz.open(os.fspath(pdf_bytes_or_path))
+    else:
+        document = fitz.open(stream=bytes(pdf_bytes_or_path), filetype="pdf")
+    try:
+        records = _records_from_tables(document)
+        if records:
+            return records
+        return _records_from_words(document)
+    finally:
+        document.close()
 
 
 def enrich(rows):
