@@ -97,7 +97,7 @@ st.markdown(
 )
 
 # ---------------------------------------------------------------- input zone
-c_in, c_sample = st.columns([2.2, 1], vertical_alignment="bottom")
+c_in, c_sample = st.columns([2.2, 1], vertical_alignment="center")
 with c_in:
     uploaded = st.file_uploader(
         "Drop a BOQ here, or browse",
@@ -105,7 +105,11 @@ with c_in:
         help="Text-based PDFs are supported. Scanned PDFs need OCR first.",
     )
 with c_sample:
-    sample_clicked = st.button("Load demo BOQ", type="primary", width="stretch")
+    sample_clicked = st.button(
+        "Reload demo BOQ" if "demo_loaded" in st.session_state else "Load demo BOQ",
+        type="primary",
+        width="stretch",
+    )
 
 rows = None
 source_name = None
@@ -114,6 +118,7 @@ if sample_clicked:
     with open(sample_path, encoding="utf-8") as f:
         rows = parse_csv(f.read())
     source_name = "demo BOQ"
+    st.session_state["demo_loaded"] = True
     st.markdown(
         '<div class="state-line">✅ Demo loaded: 27 items with 4 planted anomalies. '
         "Every one should get caught.</div>",
