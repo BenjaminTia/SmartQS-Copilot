@@ -204,15 +204,6 @@ if rows:
     else:
         st.success("No anomalies detected. The BOQ looks internally consistent.")
 
-    # review
-    st.markdown('<div class="section-title">🧠 Plain-language review</div>', unsafe_allow_html=True)
-    review, status = llm_review(len(rows), est["trades"], flags, est["grand_total"])
-    if not status.startswith("llm_ok"):
-        review = fallback_review(flags, est["grand_total"])
-        st.caption(f"Rule-based fallback ({status}).")
-    safe_review = review.replace("$", "\\$")
-    st.markdown(f'<div class="review-panel">{safe_review}</div>', unsafe_allow_html=True)
-
     # items table
     st.markdown('<div class="section-title">📋 Items</div>', unsafe_allow_html=True)
     df = pd.DataFrame(rows)
@@ -248,6 +239,18 @@ if rows:
             "Reference rates are a screening baseline (HK market, 2025-26), not pricing advice. "
             "Always confirm flagged items against the tender drawings and original quotes."
         )
+
+    # review (last: free AI can take a minute; never block the results)
+    st.markdown('<div class="section-title">🧠 Plain-language review</div>', unsafe_allow_html=True)
+    with st.spinner("Writing the plain-language review (free AI, may take a minute)..."):
+        review, status = llm_review(len(rows), est["trades"], flags, est["grand_total"])
+    if not status.startswith("llm_ok"):
+        review = fallback_review(flags, est["grand_total"])
+        st.caption(f"Rule-based fallback ({status}).")
+    else:
+        st.caption("AI-generated summary of the screening above; findings come from the flags, not the AI.")
+    safe_review = review.replace("$", "\\$")
+    st.markdown(f'<div class="review-panel">{safe_review}</div>', unsafe_allow_html=True)
 
     # footer
     st.markdown(
