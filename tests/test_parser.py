@@ -126,7 +126,7 @@ def test_community_hall_pdf_parses_and_flags():
     flag exactly the three planted anomalies: C2 rate, C4 rate, B4 duplicate."""
     from src.anomalies import detect
     import src.parser as parser_module
-    path = pathlib.Path("samples/boq_community_hall.pdf")
+    path = Path("samples/boq_community_hall.pdf")
     rows = parser_module.enrich(parser_module.parse_pdf(str(path)))
     assert len(rows) == 24
     flags = detect(rows)
