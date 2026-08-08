@@ -97,7 +97,7 @@ st.markdown(CSS, unsafe_allow_html=True)
 st.markdown(
     '<div class="app-header"><span class="app-logo">🏗️</span>'
     '<div><div class="app-title">Smart QS Copilot</div>'
-    '<div class="app-tag">BOQ screening against Hong Kong construction reference rates</div>'
+    '<div class="app-tag">Check Bills of Quantities against Hong Kong construction reference rates</div>'
     '<span class="app-badge">Smart QS Hackathon 2026</span></div></div>',
     unsafe_allow_html=True,
 )
@@ -105,13 +105,13 @@ st.markdown(
 # ---------------------------------------------------------------- intro
 st.markdown(
     '<div class="intro-panel">'
-    '<div class="intro-lead">Every construction project runs on a <b>Bill of Quantities</b>: the itemized '
-    'list of everything the job needs, from concrete to door handles. One typo in a rate can inflate a '
-    'contract by millions, and catching it is usually a slow manual read.</div>'
-    '<div class="intro-sub">Smart QS Copilot screens a BOQ in under a minute. It parses the items, '
-    'estimates the cost against Hong Kong reference rates, flags anything that looks wrong, and explains '
-    'the findings in plain language. Built for quantity surveyors, project managers and anyone who has to '
-    'trust a long list of numbers.</div></div>',
+    '<div class="intro-lead">A <b>Bill of Quantities (BOQ)</b> is the itemized list of the materials, labor '
+    'and work a construction project needs, from concrete to door handles. One incorrect rate can '
+    'significantly affect a contract, but finding it in a long BOQ is usually slow and manual.</div>'
+    '<div class="intro-sub">Smart QS Copilot parses your BOQ, compares item rates with Hong Kong '
+    'reference data, and highlights unusual values, possible typos and missing items, then explains '
+    'the findings in plain language. Typically under a minute per document. Built for quantity '
+    'surveyors and project managers; results should be verified by a qualified professional.</div></div>',
     unsafe_allow_html=True,
 )
 
