@@ -1,32 +1,77 @@
-"""LLM layer: DeepSeek plain-language review of the BOQ analysis.
-Falls back to a rule-based summary when the API is unavailable (offline demo safety)."""
+"""LLM layer: plain-language review of the BOQ analysis.
+Providers tried in order: Gemini (free) -> Luna (gpt-5.6-luna via OpenAI) -> DeepSeek.
+If all fail, the caller falls back to the rule-based review. The analysis itself
+(parse, estimate, flags) is deterministic software; the LLM only writes prose."""
 import json
 import os
-import urllib.request
 import ssl
+import urllib.request
+
+PROVIDERS = [
+    {
+        "name": "gemini",
+        "key_var": "GOOGLE_API_KEY",
+        "url": "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+        "model": "gemini-2.5-flash",
+    },
+    {
+        "name": "luna",
+        "key_var": "OPENAI_API_KEY",
+        "url": "https://api.openai.com/v1/chat/completions",
+        "model": "gpt-5.6-luna",
+    },
+    {
+        "name": "deepseek",
+        "key_var": "DEEPSEEK_API_KEY",
+        "url": "https://api.deepseek.com/chat/completions",
+        "model": "deepseek-chat",
+    },
+]
 
 
-def _key():
-    # Streamlit Cloud secrets first (deployed env)
+def _keys():
+    """All candidate keys: Streamlit secrets, local .env, environment."""
+    found = {}
     try:
         import streamlit as st
-        if hasattr(st, "secrets") and "DEEPSEEK_API_KEY" in st.secrets:
-            return st.secrets["DEEPSEEK_API_KEY"]
+        if hasattr(st, "secrets"):
+            for p in PROVIDERS:
+                if p["key_var"] in st.secrets:
+                    found[p["key_var"]] = st.secrets[p["key_var"]]
     except Exception:
         pass
     try:
         for line in open(r"C:\Users\Benjamin\AppData\Local\hermes\.env", encoding="utf-8", errors="ignore"):
-            if line.strip().startswith("DEEPSEEK_API_KEY="):
-                return line.strip().split("=", 1)[1].strip().strip('"').strip("'")
+            m = line.strip()
+            if m and not m.startswith("#") and "=" in m:
+                k, v = m.split("=", 1)
+                found.setdefault(k.strip(), v.strip().strip('"').strip("'"))
     except Exception:
         pass
-    return os.environ.get("DEEPSEEK_API_KEY", "")
+    for k in os.environ:
+        found.setdefault(k, os.environ[k])
+    return found
 
 
-def llm_review(items_count, trades, flags, grand_total, market_ctx=None):
-    key = _key()
-    if not key:
-        return None, "llm_unavailable"
+def _call(provider, key, prompt):
+    ctx = ssl.create_default_context()
+    ctx.check_hostname = False
+    ctx.verify_mode = ssl.CERT_NONE
+    payload = json.dumps({
+        "model": provider["model"],
+        "messages": [{"role": "user", "content": prompt}],
+        "max_tokens": 300,
+    }).encode()
+    req = urllib.request.Request(
+        provider["url"],
+        data=payload,
+        headers={"Content-Type": "application/json", "Authorization": f"Bearer {key}"},
+    )
+    resp = json.loads(urllib.request.urlopen(req, timeout=90, context=ctx).read())
+    return resp["choices"][0]["message"]["content"]
+
+
+def llm_review(items_count, trades, flags, grand_total):
     flags_text = "\n".join(
         f"- [{f['severity']}] {f['description']}: {f['detail']}" for f in flags
     ) or "None"
@@ -42,36 +87,13 @@ def llm_review(items_count, trades, flags, grand_total, market_ctx=None):
         "Never use em-dashes (the long dash character). "
         "Write amounts like 'HK$2,850' but keep the rest of the text plain."
     )
-    payload = json.dumps({
-        "model": "deepseek-chat",
-        "messages": [{"role": "user", "content": prompt}],
-        "max_tokens": 300,
-    }).encode()
-    ctx = ssl.create_default_context()
-    ctx.check_hostname = False
-    ctx.verify_mode = ssl.CERT_NONE
-    try:
-        req = urllib.request.Request(
-            "https://api.deepseek.com/chat/completions",
-            data=payload,
-            headers={"Content-Type": "application/json", "Authorization": f"Bearer {key}"},
-        )
-        resp = json.loads(urllib.request.urlopen(req, timeout=90, context=ctx).read())
-        return resp["choices"][0]["message"]["content"], "llm_ok"
-    except Exception as e:
-        return None, f"llm_error: {str(e)[:120]}"
-
-
-def fallback_review(flags, grand_total):
-    if not flags:
-        return (f"The estimate (HK${grand_total:,.0f}) raised no automatic flags. "
-                "It still needs a QS eye for scope omissions and provisional sums.")
-    crit = [f for f in flags if f["severity"] == "critical"]
-    warn = [f for f in flags if f["severity"] == "warning"]
-    head = "Critical issue" if len(crit) == 1 else "Critical issues"
-    body = f"Estimate HK${grand_total:,.0f}. {head}: "
-    body += "; ".join(f"{f['description']} ({f['detail']})" for f in crit[:3])
-    if warn:
-        body += f". Plus {len(warn)} warning(s), including {warn[0]['description']}."
-    body += " Next step: verify the flagged rates and quantities against the tender drawings before pricing."
-    return body
+    keys = _keys()
+    for provider in PROVIDERS:
+        key = keys.get(provider["key_var"], "")
+        if not key:
+            continue
+        try:
+            return _call(provider, key, prompt), f"llm_ok ({provider['name']})"
+        except Exception as e:
+            continue
+    return None, "llm_unavailable"
