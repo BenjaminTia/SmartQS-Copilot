@@ -38,7 +38,9 @@ def llm_review(items_count, trades, flags, grand_total, market_ctx=None):
         f"Flags:\n{flags_text}\n"
         "Write a concise plain-language review for a non-expert project manager: "
         "1) is the estimate plausible, 2) which flags matter most and why, "
-        "3) one concrete next step. Max 120 words. No markdown headers."
+        "3) one concrete next step. Max 120 words. Plain text only. "
+        "Never use em-dashes (the long dash character). "
+        "Write amounts like 'HK$2,850' but keep the rest of the text plain."
     )
     payload = json.dumps({
         "model": "deepseek-chat",

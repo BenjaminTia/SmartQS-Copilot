@@ -91,7 +91,8 @@ if rows:
     if status != "llm_ok":
         review = fallback_review(flags, est["grand_total"])
         st.caption("(rule-based fallback; LLM review unavailable)")
-    st.markdown(review)
+    # escape $ so Streamlit does not treat amounts as LaTeX math (renders letter-spaced)
+    st.markdown(review.replace("$", "\\$"))
 
     st.subheader("🏛️ Market context")
     try:
