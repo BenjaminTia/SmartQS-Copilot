@@ -1,6 +1,7 @@
 """LLM layer: plain-language review of the BOQ analysis.
-Provider: OpenRouter free-models router (zero-cost models only).
-If it fails, the caller falls back to the rule-based review. The analysis itself
+Provider: OpenRouter zero-cost free models. Primary is NVIDIA Nemotron 3 Ultra
+(550B, 1M context, strong instruction-following); Nemotron 3 Super as backup.
+If all fail, the caller falls back to the rule-based review. The analysis itself
 (parse, estimate, flags) is deterministic software; the LLM only writes prose."""
 import json
 import os
@@ -9,10 +10,16 @@ import urllib.request
 
 PROVIDERS = [
     {
-        "name": "openrouter",
+        "name": "openrouter-nemotron-ultra",
         "key_var": "OPENROUTER_API_KEY",
         "url": "https://openrouter.ai/api/v1/chat/completions",
-        "model": "openrouter/free",
+        "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+    },
+    {
+        "name": "openrouter-nemotron-super",
+        "key_var": "OPENROUTER_API_KEY",
+        "url": "https://openrouter.ai/api/v1/chat/completions",
+        "model": "nvidia/nemotron-3-super-120b-a12b:free",
     },
 ]
 
