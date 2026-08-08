@@ -30,6 +30,12 @@ CSS = """
 .app-badge { display: inline-block; margin-top: 0.35rem; font-size: 0.72rem; font-weight: 600;
   color: #F5A623; border: 1px solid #F5A62355; border-radius: 99px; padding: 0.12rem 0.6rem; }
 
+/* intro panel */
+.intro-panel { background: linear-gradient(180deg, #1A2026, #161C21); border: 1px solid #2A323A;
+  border-radius: 14px; padding: 1rem 1.3rem; margin: 0.8rem 0 0.2rem; }
+.intro-lead { font-size: 0.98rem; line-height: 1.6; color: #DDE2E8; margin-bottom: 0.5rem; }
+.intro-sub { font-size: 0.9rem; line-height: 1.55; color: #9AA3AC; }
+
 /* section titles */
 .section-title { font-size: 1.05rem; font-weight: 700; margin: 1.6rem 0 0.6rem; color: #F2F0EA;
   display: flex; align-items: center; gap: 0.45rem; }
@@ -93,6 +99,19 @@ st.markdown(
     '<div><div class="app-title">Smart QS Copilot</div>'
     '<div class="app-tag">BOQ screening against Hong Kong construction reference rates</div>'
     '<span class="app-badge">Smart QS Hackathon 2026</span></div></div>',
+    unsafe_allow_html=True,
+)
+
+# ---------------------------------------------------------------- intro
+st.markdown(
+    '<div class="intro-panel">'
+    '<div class="intro-lead">Every construction project runs on a <b>Bill of Quantities</b>: the itemized '
+    'list of everything the job needs, from concrete to door handles. One typo in a rate can inflate a '
+    'contract by millions, and catching it is usually a slow manual read.</div>'
+    '<div class="intro-sub">Smart QS Copilot screens a BOQ in under a minute. It parses the items, '
+    'estimates the cost against Hong Kong reference rates, flags anything that looks wrong, and explains '
+    'the findings in plain language. Built for quantity surveyors, project managers and anyone who has to '
+    'trust a long list of numbers.</div></div>',
     unsafe_allow_html=True,
 )
 

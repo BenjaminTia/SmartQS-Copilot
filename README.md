@@ -21,3 +21,15 @@ Built for the Smart QS Hackathon 2026 (Housing Bureau + Cyberport + HKU).
 - AI plain-language review (DeepSeek)
 
 Try the sample BOQ for a one-click demo: it contains deliberately planted errors, and every one gets caught.
+
+## Run your own copy
+
+The app needs **no API key to work**. Parsing, the cost estimate, and all anomaly flags run entirely
+locally and free. The only AI that touches an external service is the optional plain-language review,
+which uses DeepSeek:
+
+- **Streamlit Cloud**: Manage app → Settings → Secrets, add `DEEPSEEK_API_KEY = "sk-..."`
+- **Local**: export the env var `DEEPSEEK_API_KEY`, or add the same line to a local `.env`
+- **Without a key**: the app silently falls back to a rule-based review. Nothing breaks.
+
+Each review costs a fraction of a cent; the rest of the app costs nothing at all.
