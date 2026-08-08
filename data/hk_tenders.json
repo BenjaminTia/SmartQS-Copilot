@@ -1,0 +1,14 @@
+{
+  "_note": "Sample of real Hong Kong public tender notices (Development Bureau, CEDD). Verified entries only; sources listed. Used for market-context comparison in the demo.",
+  "tenders": [
+    {
+      "ref": "WT-002-25",
+      "title": "Development of Advanced Construction Industry Building in Tsing Yi",
+      "authority": "Development Bureau (DEVB)",
+      "source": "https://www.devb.gov.hk/filemanager/en/content_787/Tender_Notice_WT-002-25_e.pdf",
+      "noticed": "2025",
+      "category": "Building"
+    }
+  ],
+  "market_notes": "HK public works tenders are published via DEVB (devb.gov.hk/en/tender_notices) and CEDD (cedd.gov.hk/eng/tender-notices). Contract award notices: Government Logistics Department e-Tender Box (pcms2.gld.gov.hk). Rate references in this app are a published-reference baseline (HK construction market, 2025-26), clearly labeled as reference for anomaly screening, not pricing advice."
+}

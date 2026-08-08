@@ -1,0 +1,28 @@
+section,item,description,unit,qty,rate
+Substructure,A1,Excavation for foundation (machine dig),m3,350,340
+Substructure,A2,Blinding concrete grade 20,m3,40,1600
+Substructure,A3,Concrete grade 35 in foundations,m3,120,1750
+Substructure,A4,Reinforcement bar supply and fix (T16),kg,15000,11.5
+Substructure,A5,Formwork to foundation faces,m2,800,460
+Superstructure,B1,Masonry wall in cement sand mortar,m2,650,660
+Superstructure,B2,Reinforced concrete column grade 35,m3,85,1850
+Superstructure,B3,Formwork to columns,m2,900,470
+Superstructure,B4,Reinforcement bar supply and fix (T20),kg,22000,12
+Superstructure,B5,Precast concrete slab panel,m2,1400,1450
+Finishes,C1,Cement sand plastering to wall,m2,1300,175
+Finishes,C2,Emulsion painting to wall,m2,2400,52
+Finishes,C3,Ceramic wall tiling,m2,900,2850
+Finishes,C4,Waterproofing membrane to roof,m2,700,265
+Finishes,C5,Ceiling false ceiling with metal frame,m2,1100,380
+External Works,D1,Demolition of existing structures,m3,90,480
+External Works,D2,Excavation and disposal of spoil,m3,420,355
+External Works,D3,uPVC drainage pipe 110mm,m,320,285
+External Works,D4,Road base and asphalt surfacing,m2,1500,620
+External Works,D5,Scaffolding to external walls,m2,1200,115
+Services,E1,Electrical installation point,no.,180,950
+Services,E2,Plumbing installation point,no.,120,1050
+Services,E3,Fire alarm detection point,no.,95,1250
+Services,E4,LV switchboard supply and install,no.,2,185000
+Joinery,F1,Hollow core door with frame and ironmongery,no.,45,2750
+Joinery,F2,Aluminium window with glazing,m2,220,3100
+Joinery,F3,Scaffolding to external walls,m2,1200,118
