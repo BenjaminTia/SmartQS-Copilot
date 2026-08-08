@@ -20,7 +20,7 @@ st.set_page_config(page_title="Smart QS Copilot", page_icon="🏗️", layout="w
 
 CSS = """
 <style>
-.block-container { padding-top: 1.4rem; padding-bottom: 3rem; max-width: 1180px; }
+.block-container { padding-top: 4.2rem; padding-bottom: 3rem; max-width: 1120px; }
 
 /* header */
 .app-header { display: flex; align-items: center; gap: 0.8rem; margin-bottom: 0.4rem; }
@@ -97,7 +97,7 @@ st.markdown(
 )
 
 # ---------------------------------------------------------------- input zone
-c_in, c_sample = st.columns([3, 1], vertical_alignment="bottom")
+c_in, c_sample = st.columns([2.2, 1], vertical_alignment="bottom")
 with c_in:
     uploaded = st.file_uploader(
         "Drop a BOQ here, or browse",
@@ -106,7 +106,6 @@ with c_in:
     )
 with c_sample:
     sample_clicked = st.button("Load demo BOQ", type="primary", width="stretch")
-st.caption("CSV, Excel, TXT or PDF · up to 200MB · amounts in HKD")
 
 rows = None
 source_name = None
