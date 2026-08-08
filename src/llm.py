@@ -94,6 +94,22 @@ def llm_review(items_count, trades, flags, grand_total):
             continue
         try:
             return _call(provider, key, prompt), f"llm_ok ({provider['name']})"
-        except Exception as e:
+        except Exception:
             continue
     return None, "llm_unavailable"
+
+
+def fallback_review(flags, grand_total):
+    """Rule-based review used when no LLM provider is reachable."""
+    if not flags:
+        return (f"The estimate (HK${grand_total:,.0f}) raised no automatic flags. "
+                "It still needs a QS eye for scope omissions and provisional sums.")
+    crit = [f for f in flags if f["severity"] == "critical"]
+    warn = [f for f in flags if f["severity"] == "warning"]
+    head = "Critical issue" if len(crit) == 1 else "Critical issues"
+    body = f"Estimate HK${grand_total:,.0f}. {head}: "
+    body += "; ".join(f"{f['description']} ({f['detail']})" for f in crit[:3])
+    if warn:
+        body += f". Plus {len(warn)} warning(s), including {warn[0]['description']}."
+    body += " Next step: verify the flagged rates and quantities against the tender drawings before pricing."
+    return body
