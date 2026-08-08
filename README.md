@@ -26,14 +26,11 @@ Try the sample BOQ for a one-click demo: it contains deliberately planted errors
 
 The app needs **no API key to work**. Parsing, the cost estimate, and all anomaly flags run entirely
 locally and free. The only AI that touches an external service is the optional plain-language review,
-which tries providers in order:
+which uses **OpenRouter's free-models router** (`openrouter/free`, zero-cost models only):
 
-- **Gemini** (`GOOGLE_API_KEY`, model `gemini-2.5-flash`) — free tier
-- **Luna** (`OPENAI_API_KEY`, model `gpt-5.6-luna`) — fallback
-
-- **Streamlit Cloud**: Manage app → Settings → Secrets, add the keys as TOML:
-  `GOOGLE_API_KEY = "..."` and `OPENAI_API_KEY = "..."`
-- **Local**: export the env vars, or add the same lines to a local `.env`
-- **Without keys**: the app silently falls back to a rule-based review. Nothing breaks.
+- **Streamlit Cloud**: Manage app → Settings → Secrets, add
+  `OPENROUTER_API_KEY = "sk-or-..."`
+- **Local**: export the env var `OPENROUTER_API_KEY`, or add the same line to a local `.env`
+- **Without a key**: the app silently falls back to a rule-based review. Nothing breaks.
 
 Each review costs a fraction of a cent; the rest of the app costs nothing at all.

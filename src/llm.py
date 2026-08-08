@@ -1,6 +1,6 @@
 """LLM layer: plain-language review of the BOQ analysis.
-Providers tried in order: Gemini (free) -> Luna (gpt-5.6-luna via OpenAI).
-If all fail, the caller falls back to the rule-based review. The analysis itself
+Provider: OpenRouter free-models router (zero-cost models only).
+If it fails, the caller falls back to the rule-based review. The analysis itself
 (parse, estimate, flags) is deterministic software; the LLM only writes prose."""
 import json
 import os
@@ -9,16 +9,10 @@ import urllib.request
 
 PROVIDERS = [
     {
-        "name": "gemini",
-        "key_var": "GOOGLE_API_KEY",
-        "url": "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
-        "model": "gemini-2.5-flash",
-    },
-    {
-        "name": "luna",
-        "key_var": "OPENAI_API_KEY",
-        "url": "https://api.openai.com/v1/chat/completions",
-        "model": "gpt-5.6-luna",
+        "name": "openrouter",
+        "key_var": "OPENROUTER_API_KEY",
+        "url": "https://openrouter.ai/api/v1/chat/completions",
+        "model": "openrouter/free",
     },
 ]
 
