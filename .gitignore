@@ -1,7 +1,5 @@
 __pycache__/
 *.pyc
-.git/
-tests/
-audit_correctness.py
-deploy_hf.py
-.streamlit/
+.pytest_cache/
+.env
+.DS_Store

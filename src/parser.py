@@ -39,40 +39,185 @@ def _to_float(x):
         return None
 
 
+# Column header aliases used to locate the real header row among junk rows and
+# multiple header rows. More specific labels are listed first so a header like
+# "Item Description" lands on description, not item, and "Unit Rate" lands on
+# rate, not unit.
+_HEADER_ALIASES = [
+    ("description", ["item description", "description of works", "description of work",
+                     "description", "particulars", "details"]),
+    ("rate", ["rate (hk$)", "rate hk$", "unit rate", "unit price", "rate", "price"]),
+    ("qty", ["quantity", "quantities", "qty"]),
+    ("unit", ["unit"]),
+    ("section", ["work section", "trade section", "section", "trade", "division"]),
+    ("item", ["item code", "item no", "item ref", "item", "ref", "code"]),
+]
+
+
+def _match_header_field(header_cell):
+    """Map one header cell to a BOQ field name, or None when it matches none."""
+    key = _clean(header_cell).lower()
+    if not key:
+        return None
+    for field, names in _HEADER_ALIASES:
+        for name in names:
+            if name in key:
+                return field
+    # Substring fallback keeps legacy single-word headers working.
+    for field in FIELDS:
+        if field in key or key in field:
+            return field
+    return None
+
+
+def _header_index_map(header_cells):
+    """Map header cells to column indexes. First alias hit per field wins."""
+    mapping = {}
+    for i, cell in enumerate(header_cells):
+        field = _match_header_field(cell)
+        if field is not None and field not in mapping:
+            mapping[field] = i
+    return mapping
+
+
+def _pick(cells, mapping, field):
+    idx = mapping.get(field)
+    if idx is None or idx >= len(cells):
+        return ""
+    return _clean(cells[idx])
+
+
+def _record_from_cells(cells, mapping):
+    """Build one normalized item dict from raw cells and a column mapping."""
+    rec = {
+        "section": _pick(cells, mapping, "section"),
+        "item": _pick(cells, mapping, "item"),
+        "description": _pick(cells, mapping, "description"),
+        "unit": _pick(cells, mapping, "unit"),
+        "qty": _to_float(_pick(cells, mapping, "qty")),
+        "rate": _to_float(_pick(cells, mapping, "rate")),
+    }
+    if not rec["description"] and rec["item"]:
+        rec["description"] = rec["item"]
+    rec["unit"] = UNIT_MAP.get(rec["unit"].lower(), rec["unit"].lower())
+    if _is_junk_record(rec):
+        return None
+    return rec
+
+
+def _is_junk_record(rec):
+    """True for repeated header rows and fully empty rows.
+
+    Chinese text is never treated as junk: the header-label set is all
+    English, and a non-empty description always survives, whatever the script.
+    """
+    desc = rec["description"].lower()
+    header_labels = {
+        "description", "particulars", "details", "item description",
+        "description of works", "description of work", "item", "ref",
+        "unit", "qty", "quantity", "rate", "price", "section", "trade",
+    }
+    if desc in header_labels:
+        return True
+    if not desc:
+        return True
+    return False
+
+
+def _forward_fill_sections(records):
+    """Fill blank section labels from the previous non-blank label.
+
+    Excel renders merged trade/section label cells as a value in the first row
+    of each group and blanks below it; forward-filling restores the label on
+    every row so it is not lost.
+    """
+    last = ""
+    for rec in records:
+        if not rec["section"]:
+            rec["section"] = last
+        else:
+            last = rec["section"]
+    return records
+
+
+def _find_header_row(all_rows):
+    """Return (header_index, mapping) for the best header row, or (None, None).
+
+    A row is a header candidate when it maps a description column plus at
+    least one of quantity, rate, or unit. Among candidates the row mapping the
+    most fields wins, so a full two-tier header is preferred over a partial
+    grouping banner.
+    """
+    best_idx = None
+    best_map = None
+    best_score = -1
+    for i, row in enumerate(all_rows):
+        mapping = _header_index_map(row)
+        if "description" not in mapping:
+            continue
+        if not (("qty" in mapping) or ("rate" in mapping) or ("unit" in mapping)):
+            continue
+        score = len(mapping)
+        if score > best_score:
+            best_score = score
+            best_idx = i
+            best_map = mapping
+    return best_idx, best_map
+
+
 def parse_csv(text: str):
     rows = []
-    reader = csv.reader(io.StringIO(text))
-    header = next(reader, None)
-    if header is None:
+    text = text.lstrip("\ufeff")
+    all_rows = [row for row in csv.reader(io.StringIO(text))]
+    if not all_rows:
         return rows
-    # map header names (case-insensitive) to fields
-    idx = {}
-    for i, h in enumerate(header):
-        key = h.strip().lower()
-        for f in FIELDS:
-            if f in key or key in f:
-                idx[f] = i
-                break
-    if "description" not in idx:
-        # try positional fallback
-        idx = {f: i for i, f in enumerate(FIELDS[: len(header)])}
-    for line in reader:
+    header_idx, mapping = _find_header_row(all_rows)
+    if mapping is None:
+        # No recognizable header: fall back to positional columns on row 0.
+        header_idx = 0
+        mapping = {f: i for i, f in enumerate(FIELDS[: len(all_rows[0])])}
+    records = []
+    for line in all_rows[header_idx + 1:]:
         if len(line) < 2:
             continue
-        rec = {
-            "section": _clean(line[idx["section"]] if "section" in idx else ""),
-            "item": _clean(line[idx["item"]] if "item" in idx else ""),
-            "description": _clean(line[idx["description"]] if "description" in idx else ""),
-            "unit": _clean(line[idx["unit"]] if "unit" in idx else ""),
-            "qty": _to_float(line[idx["qty"]] if "qty" in idx else ""),
-            "rate": _to_float(line[idx["rate"]] if "rate" in idx else ""),
-        }
-        if not rec["description"] and rec["item"]:
-            rec["description"] = rec["item"]
-        rec["unit"] = UNIT_MAP.get(rec["unit"].lower(), rec["unit"].lower())
-        if rec["description"]:
-            rows.append(rec)
-    return rows
+        rec = _record_from_cells(line, mapping)
+        if rec is not None:
+            records.append(rec)
+    return _forward_fill_sections(records)
+
+
+def parse_excel(file_bytes_or_path):
+    """Read an Excel workbook (bytes, path, or file-like) into normalized items.
+
+    Tolerates leading junk rows, multiple header rows, and merged label cells:
+    the real column header is located by keyword and merged section/trade
+    labels are forward-filled with pandas so no label is lost.
+    """
+    import numpy as np
+    import pandas as pd
+
+    if isinstance(file_bytes_or_path, (bytes, bytearray)):
+        file_bytes_or_path = io.BytesIO(bytes(file_bytes_or_path))
+    df = pd.read_excel(file_bytes_or_path, header=None, dtype=object)
+    all_rows = []
+    for _, row in df.iterrows():
+        all_rows.append(["" if pd.isna(v) else str(v) for v in row.tolist()])
+    header_idx, mapping = _find_header_row(all_rows)
+    if mapping is None:
+        return []
+    data = df.iloc[header_idx + 1:].reset_index(drop=True)
+    if "section" in mapping and mapping["section"] < data.shape[1]:
+        sec_col = data.iloc[:, mapping["section"]]
+        data.iloc[:, mapping["section"]] = (
+            sec_col.replace("", np.nan).ffill().fillna("")
+        )
+    records = []
+    for _, row in data.iterrows():
+        cells = ["" if pd.isna(v) else str(v) for v in row.tolist()]
+        rec = _record_from_cells(cells, mapping)
+        if rec is not None:
+            records.append(rec)
+    return records
 
 
 def parse_pdf_text(text: str):

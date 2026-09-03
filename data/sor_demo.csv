@@ -1,0 +1,29 @@
+item,unit,rate_hkd,keywords
+Demolish existing brick wall,m2,320,demolish;brick wall;brickwork demolition;break down wall;拆磚
+Demolish reinforced concrete,m3,520,demolish;reinforced concrete;break up concrete;拆混凝土
+Excavation machine dig,m3,340,excavation;excavate;machine dig;bulk excavation
+Disposal of spoil off site,m3,160,disposal;spoil;cart away;muck away
+Concrete grade 20 blinding,m3,1600,concrete;grade 20;blinding
+Concrete grade 30,m3,1750,concrete;grade 30
+Concrete grade 45,m3,1980,concrete;grade 45
+High yield steel reinforcement bar,tonne,11500,reinforcement;rebar;steel bar;high yield;bar
+Formwork to walls,m2,460,formwork;shuttering;wall formwork
+Formwork to soffits and beams,m2,520,formwork;soffit;beam formwork;shuttering
+Blockwork wall 100mm,m2,450,blockwork;block wall;concrete block
+Brickwork in cement mortar,m2,650,brickwork;masonry;brick in cement;wall in cement
+Cement sand plastering,m2,175,plaster;plastering;rendering;cement sand
+Ceramic wall tiling,m2,330,tiling;wall tiling;ceramic wall tile;tile
+Ceramic floor tiling,m2,380,tiling;floor tiling;ceramic floor tile;tile
+Emulsion painting to walls,m2,55,paint;painting;emulsion
+Waterproofing membrane,m2,265,waterproof;waterproofing;membrane;tanking
+Suspended false ceiling,m2,380,ceiling;false ceiling;suspended ceiling
+uPVC drainage pipe 110mm,m,285,drain;drainage;upvc pipe;pipe
+Aluminium window with glazing,m2,3100,window;glazing;aluminium window
+Hollow core door set,no.,2800,door;door set;hollow core door
+Precast concrete slab panel,m2,1450,precast;precast slab;precast concrete
+Road base and asphalt surfacing,m2,620,asphalt;road;road base;paving
+Scaffolding to external walls,m2,115,scaffold;scaffolding
+Electrical installation point,no.,950,electrical;socket;light point;electrical installation
+Plumbing installation point,no.,1050,plumbing;water point;sanitary;plumbing point
+Fire alarm detection point,no.,1250,fire alarm;detection point;detector
+LV switchboard,no.,185000,switchboard;lv panel;low voltage panel

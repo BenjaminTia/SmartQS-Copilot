@@ -135,3 +135,49 @@ def test_community_hall_pdf_parses_and_flags():
     assert ("rate", "C4") in by_item
     assert ("duplicate", "B4") in by_item
     assert len(flags) == 3
+
+
+def test_parse_csv_skips_junk_header_rows():
+    """A CSV with three stray title lines before the real header parses cleanly."""
+    text = (
+        "Smart QS Demo BOQ (messy)\n"
+        "Project: 123 Main Street Development, Kowloon\n"
+        "Prepared 3 Sep 2026\n"
+        "section,item,description,unit,qty,rate\n"
+        "Substructure,A101,Excavation for foundation,m3,350,340\n"
+        "Substructure,A102,Blinding concrete grade 20,m3,40,1600\n"
+    )
+    rows = parse_csv(text)
+    assert len(rows) == 2
+    assert [r["item"] for r in rows] == ["A101", "A102"]
+    assert rows[0]["description"] == "Excavation for foundation"
+    assert rows[0]["qty"] == 350
+    assert rows[0]["rate"] == 340
+
+
+def test_parse_csv_keeps_bilingual_description():
+    """A mixed English / Traditional Chinese description keeps both languages."""
+    text = (
+        "section,item,description,unit,qty,rate\n"
+        "Finishes,D401,Ceramic wall tiling 牆身瓷磚,m2,900,2850\n"
+    )
+    rows = parse_csv(text)
+    assert len(rows) == 1
+    assert "Ceramic wall tiling" in rows[0]["description"]
+    assert "牆身瓷磚" in rows[0]["description"]
+
+
+def test_parse_csv_forward_fills_merged_section_labels():
+    """Blank section cells (merged-cell style) are forward-filled, not lost."""
+    text = (
+        "section,item,description,unit,qty,rate\n"
+        "Substructure,A101,Excavation for foundation,m3,350,340\n"
+        ",A102,Blinding concrete grade 20,m3,40,1600\n"
+        "Finishes,D401,Ceramic wall tiling,m2,900,2850\n"
+        ",D402,Emulsion painting,m2,2400,52\n"
+    )
+    rows = parse_csv(text)
+    assert [r["section"] for r in rows] == [
+        "Substructure", "Substructure", "Finishes", "Finishes"
+    ]
+

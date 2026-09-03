@@ -1,0 +1,32 @@
+Smart QS Hackathon 2026 - Demo Bill of Quantities
+Project: 123 Main Street Development, Kowloon, Hong Kong
+Prepared by Demo QS Limited  (deliberately messy bilingual sample for testing)
+section,item,description,unit,qty,rate
+Substructure,A101,Excavation for foundation 挖掘地基 (machine dig),m3,350,340
+,A102,Blinding concrete grade 20 墊層混凝土,m3,40,1600
+,A103,Concrete grade 35 in foundations 基礎混凝土 C35,m3,120,1750
+,A104,Reinforcement bar supply and fix (T16) 鋼筋供應及綁紮,kg,15000,11.5
+Concrete,B201,Formwork to foundation faces 基礎模板,m2,800,460
+,B202,Reinforced concrete column grade 35 鋼筋混凝土柱 C35,m3,85,1850
+,B203,Formwork to columns 柱模板,m2,900,470
+,B204,Reinforcement bar supply and fix (T20) 鋼筋供應及綁紮 T20,kg,22000,12
+Masonry,C301,Masonry wall in cement sand mortar 磚牆砌築,m2,650,660
+,C302,Blockwork wall 100mm 砌塊牆,m2,300,450
+,C303,Cement sand plastering to wall 牆身批盪,m2,1300,175
+Finishes,D401,Ceramic wall tiling 牆身瓷磚,m2,900,2850
+,D402,Emulsion painting to wall 乳膠漆牆身,m2,2400,52
+,D403,Waterproofing membrane to roof 天台防水膜,m2,700,265
+,D404,Suspended false ceiling with metal frame 假天花連金屬龍骨,m2,1100,380
+,D405,Hollow core door with frame and ironmongery 空心木門連框及五金,no.,45,2750
+Drainage,E501,uPVC drainage pipe 110mm 塑膠排水喉,m,320,285
+,E502,Excavation and disposal of spoil 挖泥及運走,m3,420,355
+,E503,Road base and asphalt surfacing 路基及瀝青路面,m2,1500,620
+,E504,Demolition of existing structures 拆卸現有結構,m3,90,480
+Services,F601,Electrical installation point 電氣安裝點,no.,180,950
+,F602,Plumbing installation point 供水安裝點,no.,120,1050
+,F603,Fire alarm detection point 火警探測點,no.,95,1250
+,F604,LV switchboard supply and install 低壓配電盤,no.,2,185000
+Joinery,G701,Aluminium window with glazing 鋁窗連玻璃,m2,220,3100
+,G702,Precast concrete slab panel 預製混凝土板,m2,1400,1450
+,G703,Scaffolding to external walls 外牆棚架,m2,1200,115
+,G704,Cement sand plastering to wall 牆身批盪,m2,1300,1750

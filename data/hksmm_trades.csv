@@ -1,0 +1,38 @@
+code,trade_en,trade_zh,typical_sections,keywords
+DEM,Demolition,拆卸工程,Demolition and Alterations,demolish;demolition;dismantle;removal;strip out;break down;拆卸;清拆;拆毀
+EXC,Excavation and Earthworks,挖掘及土方工程,Excavation;Basement,excavate;excavation;earthwork;bulk excavation;earthworks;backfill;disposal;挖掘;土方;回填;開挖
+PIL,Piling,樁基工程,Piling,plies;piling;pile cap;bored pile;driven pile;h-pile;mini-pile;樁;樁基;鑽孔樁;工字樁
+SUB,Substructure,下層結構工程,Substructure,substructure;foundation;raft;footing;ground beam;地基;基礎;地腳;承台
+CON,Concrete Works,混凝土工程,Concrete,concrete;concreting;grout;concrete works;混凝土;石屎
+REB,Reinforcement,鋼筋混凝土工程,Reinforcement,rebar;reinforcement;steel bar;reinforced;tie wire;鋼筋;扎鐵;鐵筋
+FMW,Formwork,模板工程,Formwork,formwork;form;shuttering;shutter;mould;模板;木模;金字模
+SSW,Structural Steelwork,鋼結構工程,Structural Steel,structural steel;steelwork;steel frame;erection of steel;鋼結構;鋼架;鋼材
+MET,Metal Works,金屬工程,Metal Works,metalwork;metal works;handrail;balustrade;stainless steel;aluminium;mild steel;ladder;grate;金屬;鋁;不鏽鋼;欄杆;扶手
+ROF,Roofing,屋面工程,Roofing,roofing;roof;roof tile;skylight;roof deck;屋面;屋頂;天面
+WPR,Waterproofing,防水工程,Waterproofing,waterproof;waterproofing;bituminous;membrane;tanking;防水;防潮;瀝青;膜
+CWALL,External Walls and Curtain Wall,外牆及幕牆工程,External Wall;Curtain Wall;Cladding,curtain wall;cladding;external wall;facade;glazed wall;stone cladding;aluminium cladding;幕牆;外牆;鋁板;玻璃幕牆
+JON,Joinery and Carpentry,木工及細木工程,Joinery,joinery;carpentry;timber;wood;door set;skirting;architrave;fitting;木工;木材;門套;腳線;傢俬
+GLA,Glazing,玻璃工程,Glazing,glazing;glass;mirror;window glass;tempered glass;玻璃;鏡
+PLA,Plastering,批盪工程,Plastering,plaster;plastering;render;rendering;screed base;批盪;掃灰;盪
+SCR,Screeding,砂漿找平工程,Screeding,screed;screeding;floor screed;leveling;找平;砂漿
+TIL,Tiling,鋪貼工程,Tiling,tile;tiling;ceramic tile;porcelain;floor tile;wall tile;mosaic;紙皮石;瓷磚;地磚;瓦
+PAI,Painting and Decorating,油漆工程,Painting,paint;painting;decorating;emulsion;varnish;lacquer;wallpaper;油漆;乳膠漆;掃漆;牆紙
+DRA,Drainage,排水工程,Drainage,drainage;drain;sewer;manhole;gully;u-channel;stormwater;排水;去水;污水;雨水渠;沙井
+PLU,Plumbing and Sanitary,供水及衞生設備工程,Plumbing and Drainage;Sanitary,plumbing;water supply;pipework;sanitary;wc;basin;bath;shower;tap;valve;供水;水管;衞生設備;潔具;水龍頭;坐廁
+FIR,Fire Services,消防工程,Fire Services,fire;fire services;fire fighting;sprinkler;fire hydrant;fire alarm;detector;hose reel;消防;花灑;消防喉;煙霧感應
+ELE,Electrical Installation,電力工程,Electrical,electrical;cable;conduit;trunking;socket;switch;lighting;luminaire;distribution board;mcb;電氣;電力;電線;電纜;電掣;燈具;配電
+LV,LV Switchgear and LV System,低壓開關及低壓系統工程,Electrical,switchgear;lv;low voltage;busbar;transformer;substation;低壓;配電箱;母線;變壓器
+ELV,ELV Systems,弱電系統工程,ELV;Extra Low Voltage,elv;extra low voltage;cctv;intercom;paging;public address;data;fibre;structured cabling;弱電;閉路電視;對講機;廣播;光纖
+ACV,Air Conditioning and Ventilation,空調及通風工程,Air-conditioning and Ventilation,air conditioning;air-conditioning;hvac;ventilation;ventilating;fresh air;exhaust;split type;chiller;duct;air handling;空調;冷氣;通風;鮮風;排氣;風喉
+LFT,Lifts and Escalators,升降機及電梯工程,Lifts and Escalators,lift;lifts;escalator;escalators;dumb waiter;升降機;電梯;扶手電梯;𨋢
+RWD,Roadworks,道路工程,Roadworks,roadworks;road;paving;kerb;carriageway;asphalt;bituminous surfacing;道路;瀝青;路緣;行人路
+LSC,Landscaping,園境工程,Landscaping,landscaping;landscape;planting;turf;topsoil;tree;softscape;園境;種植;草坪;樹木
+FEN,Fencing and Gates,圍欄及閘門工程,Fencing;Gates,fencing;fence;gate;barrier;railing;圍欄;鐵閘;閘門
+PAV,Paving,鋪路工程,External Works,paving;pavement;paved;block paving;interlocking;舖路;磚鋪;行人道
+SUP,Supply and Installation of Sanitary Fixtures,衞生設備供應及安裝工程,Sanitary Fixtures,sanitary;fixtures;fitting out;vanity;cabinet;潔具;枱面;櫃
+INS,Insulation and Fire Protection Coating,保溫及防火塗層工程,Insulation;Fire Protection,insulation;thermal insulation;fireproof;intumescent;fire retardant;保溫;隔熱;防火塗料
+WEL,Welding Works,焊接工程,Structural Steel;Metal Works,weld;welding;site weld;焊接
+SCA,Scaffolding,棚架工程,Scaffolding,scaffold;scaffolding;shoring;棚架;工作台
+TRA,Temporary Works,臨時工程,Temporary Works,temporary works;hoarding;temporary fencing;sheeting;臨時工程;圍板
+FIT,General Builder Fit Out,一般裝修工程,Building Works;Fit Out,fit out;fitting out;general building;builder work;handover;defects;裝修;執漏;維修
+CLN,Cleaning and Protective Works,清潔及保護工程,Cleaning,cleaning;protective;protection;final clean;brick cleaning;清潔;保護
