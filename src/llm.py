@@ -25,12 +25,25 @@ Disabled providers (why):
   - Gemini  GOOGLE_API_KEY returns HTTP 400 on both the models list and
             generateContent (key/project issue). Re-enable after key check.
 
-Two robustness rules, both learned the hard way (15 Sep 2026):
+Providers ruled OUT by the 15 Sep 2026 bench (all on the real review prompt):
+  - google/gemma-4-26b-a4b-it:free, poolside/laguna-xs-2.1:free, z-ai/glm-5.2:free
+    -> HTTP 429 (free quota exhausted at bench time; glm-5.2 kept anyway, above).
+  - inclusionai/ling-3.0-flash-sante|fin:free -> HTTP 200 with EMPTY content.
+  - thinkingmachines/inkling-small:free       -> HTTP 403.
+  - nex-agi/nex-n2.5-mini:free                -> hung ~300s then malformed JSON.
+  - No MiniMax and no Upstage/Solar model exists in OpenRouter's free tier at all
+    (minimax-m3 was delisted; the whole free list is 23 models, none MiniMax/Upstage).
+
+Three robustness rules, all learned the hard way (15 Sep 2026):
   * Reasoning models on OpenRouter can return content=null with the answer in a
     separate `reasoning` field, or burn the whole token budget on thinking. We send
     `reasoning: {exclude: true}` (OpenRouter-only field), and any provider that
     returns empty text is treated as a failure so the chain moves on. Without this,
     a null content string crashed the review panel.
+  * Reasoning models sometimes leak their chain-of-thought into `content`
+    (observed: "We need to produce concise plain-language review..."), especially
+    when the token budget is tight. A leak is worse than no answer, so
+    _extract_text() rejects it and the chain moves on.
   * The analysis itself (parse, estimate, flags) is deterministic software; the
     LLM only writes prose. Never treat the LLM as a source of truth.
 """
@@ -43,14 +56,37 @@ MAX_TOKENS = 1400
 
 PROVIDERS = [
     {
-        "name": "or-nemotron-120b",
+        # 5.2s, 712 chars, clean prose (bench 15 Sep 2026) - fastest usable free model
+        "name": "or-laguna-s",
         "key_var": "OPENROUTER_API_KEY",
         "kind": "openai",
         "url": "https://openrouter.ai/api/v1/chat/completions",
-        "models": ["nvidia/nemotron-3-super-120b-a12b:free"],
+        "models": ["poolside/laguna-s-2.1:free"],
         "extra": {"reasoning": {"exclude": True}},
     },
+
     {
+        # 15.6s, 537 chars, clean, small MoE (30B, 3B active)
+        "name": "or-nano-omni",
+        "key_var": "OPENROUTER_API_KEY",
+        "kind": "openai",
+        "url": "https://openrouter.ai/api/v1/chat/completions",
+        "models": ["nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free"],
+        "extra": {"reasoning": {"exclude": True}},
+    },
+
+    {
+        # 7.4s, 627 chars, clean (OpenRouter's own free-model router)
+        "name": "or-free-router",
+        "key_var": "OPENROUTER_API_KEY",
+        "kind": "openai",
+        "url": "https://openrouter.ai/api/v1/chat/completions",
+        "models": ["openrouter/free"],
+        "extra": {"reasoning": {"exclude": True}},
+    },
+
+    {
+        # smart general model, but free quota 429s a lot; kept because it recovers
         "name": "or-glm-5.2",
         "key_var": "OPENROUTER_API_KEY",
         "kind": "openai",
@@ -58,14 +94,17 @@ PROVIDERS = [
         "models": ["z-ai/glm-5.2:free"],
         "extra": {"reasoning": {"exclude": True}},
     },
+
     {
-        "name": "or-nemotron-lightning",
+        # fast (7.1s) but sometimes leaks chain-of-thought; the guard below skips it
+        "name": "or-nemotron-120b",
         "key_var": "OPENROUTER_API_KEY",
         "kind": "openai",
         "url": "https://openrouter.ai/api/v1/chat/completions",
-        "models": ["nvidia/nemotron-3.5-lightning:free"],
+        "models": ["nvidia/nemotron-3-super-120b-a12b:free"],
         "extra": {"reasoning": {"exclude": True}},
     },
+
     {
         "name": "deepseek-chat",
         "key_var": "DEEPSEEK_API_KEY",
@@ -101,6 +140,19 @@ def _keys():
     return found
 
 
+# Chain-of-thought leaking into the answer. A leak reads as broken prose to the
+# user, so it counts as a failure and the next provider gets a turn.
+_THINK_MARKERS = (
+    "thinking process", "we need to", "let me think", "here's a thinking",
+    "first, i need", "okay, the user", "1.  **", "the user wants me to",
+)
+
+
+def _looks_like_thinking(text):
+    low = text.lower()
+    return any(marker in low for marker in _THINK_MARKERS)
+
+
 def _extract_text(resp):
     """Pull usable prose out of a chat completion; raise if there is none."""
     choices = resp.get("choices") or []
@@ -113,6 +165,8 @@ def _extract_text(resp):
         text = (msg.get("reasoning") or "").strip()
     if not text:
         raise RuntimeError("empty content")
+    if _looks_like_thinking(text):
+        raise RuntimeError("chain-of-thought leaked into the answer")
     return text
 
 
