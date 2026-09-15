@@ -52,3 +52,5 @@ Keys go in Streamlit secrets or a local `.env`. Groq and Google Gemini are coded
 ## What it will not claim
 
 It does not measure work, certify payments, or replace a quantity surveyor. Flags are for a QS to review, rates are indicative, and nothing here is legal advice. The honest caveats are part of the point.
+
+<!-- deploy trigger: force a fresh Streamlit Cloud rebuild -->
