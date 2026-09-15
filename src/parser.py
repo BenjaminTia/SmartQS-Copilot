@@ -6,7 +6,10 @@ import io
 import os
 import re
 
-import fitz
+try:
+    import pymupdf as fitz  # modern name; silences the fitz deprecation warning
+except ImportError:  # pragma: no cover
+    import fitz
 
 from .rates import match_rate
 

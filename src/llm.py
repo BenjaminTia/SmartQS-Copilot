@@ -1,13 +1,22 @@
 """LLM layer: plain-language review of the BOQ analysis.
 
-Fallback chain (verified live 10 Sep 2026 — each provider was probed with a
-real completion before being added):
+Fallback chain (re-probed live 15 Sep 2026 — every entry below was called with
+a real completion immediately before being kept):
 
-  1. OpenRouter :free  z-ai/glm-5.2            (smart general model, free tier)
-  2. OpenRouter :free  minimax/minimax-m3      (backup free)
-  3. OpenRouter :free  google/gemma-4-31b-it   (backup free)
-  4. DeepSeek          deepseek-chat           (anchor: ~pennies per run, always up)
-  5. Rule-based fallback                       (no network at all)
+  1. OpenRouter :free  nvidia/nemotron-3-super-120b-a12b   (verified 15 Sep: 3.3s,
+                                                           clean prose, finish=stop)
+  2. OpenRouter :free  z-ai/glm-5.2                        (worked 10 Sep; currently
+                                                           HTTP 429 rate-limited, kept
+                                                           because free quota recovers)
+  3. OpenRouter :free  nvidia/nemotron-3.5-lightning        (verified 15 Sep but slow:
+                                                           ~40s; last free resort)
+  4. DeepSeek          deepseek-chat                       (anchor: pennies per run,
+                                                           verified 15 Sep, always up)
+  5. Rule-based fallback                                   (no network at all)
+
+Removed 15 Sep 2026 (why):
+  - OpenRouter  minimax/minimax-m3:free: now HTTP 404 — the model no longer exists.
+  - OpenRouter  google/gemma-4-31b-it:free: HTTP 400 Bad Request on a plain call.
 
 Disabled providers (why):
   - Groq    llama-3.3-70b-versatile: model deprecated AND the GROQ_API_KEY now
@@ -16,35 +25,46 @@ Disabled providers (why):
   - Gemini  GOOGLE_API_KEY returns HTTP 400 on both the models list and
             generateContent (key/project issue). Re-enable after key check.
 
-The analysis itself (parse, estimate, flags) is deterministic software; the
-LLM only writes prose. Never treat the LLM as a source of truth.
+Two robustness rules, both learned the hard way (15 Sep 2026):
+  * Reasoning models on OpenRouter can return content=null with the answer in a
+    separate `reasoning` field, or burn the whole token budget on thinking. We send
+    `reasoning: {exclude: true}` (OpenRouter-only field), and any provider that
+    returns empty text is treated as a failure so the chain moves on. Without this,
+    a null content string crashed the review panel.
+  * The analysis itself (parse, estimate, flags) is deterministic software; the
+    LLM only writes prose. Never treat the LLM as a source of truth.
 """
 import json
 import os
 import ssl
 import urllib.request
 
+MAX_TOKENS = 1400
+
 PROVIDERS = [
+    {
+        "name": "or-nemotron-120b",
+        "key_var": "OPENROUTER_API_KEY",
+        "kind": "openai",
+        "url": "https://openrouter.ai/api/v1/chat/completions",
+        "models": ["nvidia/nemotron-3-super-120b-a12b:free"],
+        "extra": {"reasoning": {"exclude": True}},
+    },
     {
         "name": "or-glm-5.2",
         "key_var": "OPENROUTER_API_KEY",
         "kind": "openai",
         "url": "https://openrouter.ai/api/v1/chat/completions",
         "models": ["z-ai/glm-5.2:free"],
+        "extra": {"reasoning": {"exclude": True}},
     },
     {
-        "name": "or-minimax-m3",
+        "name": "or-nemotron-lightning",
         "key_var": "OPENROUTER_API_KEY",
         "kind": "openai",
         "url": "https://openrouter.ai/api/v1/chat/completions",
-        "models": ["minimax/minimax-m3:free"],
-    },
-    {
-        "name": "or-gemma-4-31b",
-        "key_var": "OPENROUTER_API_KEY",
-        "kind": "openai",
-        "url": "https://openrouter.ai/api/v1/chat/completions",
-        "models": ["google/gemma-4-31b-it:free"],
+        "models": ["nvidia/nemotron-3.5-lightning:free"],
+        "extra": {"reasoning": {"exclude": True}},
     },
     {
         "name": "deepseek-chat",
@@ -52,6 +72,7 @@ PROVIDERS = [
         "kind": "openai",
         "url": "https://api.deepseek.com/chat/completions",
         "models": ["deepseek-chat"],
+        "extra": {},
     },
 ]
 
@@ -80,6 +101,21 @@ def _keys():
     return found
 
 
+def _extract_text(resp):
+    """Pull usable prose out of a chat completion; raise if there is none."""
+    choices = resp.get("choices") or []
+    if not choices:
+        raise RuntimeError("no choices in response")
+    msg = choices[0].get("message") or {}
+    text = (msg.get("content") or "").strip()
+    if not text:
+        # Some reasoning models put everything in `reasoning` and leave content null.
+        text = (msg.get("reasoning") or "").strip()
+    if not text:
+        raise RuntimeError("empty content")
+    return text
+
+
 def _call_openai(provider, key, prompt):
     ctx = ssl.create_default_context()
     ctx.check_hostname = False
@@ -89,8 +125,9 @@ def _call_openai(provider, key, prompt):
         payload = json.dumps({
             "model": model,
             "messages": [{"role": "user", "content": prompt}],
-            "max_tokens": 1024,
+            "max_tokens": MAX_TOKENS,
             "temperature": 0.4,
+            **provider.get("extra", {}),
         }).encode()
         req = urllib.request.Request(
             provider["url"],
@@ -102,8 +139,8 @@ def _call_openai(provider, key, prompt):
             },
         )
         try:
-            resp = json.loads(urllib.request.urlopen(req, timeout=90, context=ctx).read())
-            return resp["choices"][0]["message"]["content"]
+            resp = json.loads(urllib.request.urlopen(req, timeout=120, context=ctx).read())
+            return _extract_text(resp)
         except Exception as e:
             last = f"{model}: {str(e)[:100]}"
     raise RuntimeError(last)
@@ -132,7 +169,9 @@ def llm_review(items_count, trades, flags, grand_total):
         if not key:
             continue
         try:
-            return _call_openai(provider, key, prompt), f"llm_ok ({provider['name']})"
+            text = _call_openai(provider, key, prompt)
+            if text:
+                return text, f"llm_ok ({provider['name']})"
         except Exception as e:
             last_error = f"{provider['name']}: {str(e)[:120]}"
             continue

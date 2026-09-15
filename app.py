@@ -34,7 +34,7 @@ st.set_page_config(page_title="Smart QS Copilot", page_icon="🏗️", layout="w
 
 CSS = """
 <style>
-.block-container { padding-top: 4.2rem; padding-bottom: 3rem; max-width: 1120px; }
+.block-container { padding-top: 4.2rem; padding-bottom: 3rem; max-width: 1320px; }
 
 /* header */
 .app-header { display: flex; align-items: center; gap: 0.8rem; margin-bottom: 0.4rem; }
@@ -304,16 +304,48 @@ if rows:
             code, trade_en, score = hksmm.classify_trade(r["description"])
             classified.append((code or "", trade_en, round(score, 2)))
         df = pd.DataFrame(rows)
-        df["Trade"] = [f"{c} · {t}" for c, t, _ in classified]
+        df["Trade"] = [f"{c} · {hksmm.short_trade(c)}" if c else t for c, t, _ in classified]
         df["Confidence"] = [s for _, _, s in classified]
-        df["Amount"] = (df["qty"].fillna(0) * df["rate"].fillna(0)).map(lambda v: f"HK${v:,.0f}")
-        view = df[["item", "section", "description", "unit", "qty", "rate", "Amount", "Trade", "Confidence"]].rename(
+        df["Amount (HK$)"] = (df["qty"].fillna(0) * df["rate"].fillna(0)).round(2)
+        view = df[[
+            "item", "description", "unit", "qty", "rate", "Amount (HK$)", "Trade", "Confidence"
+        ]].rename(
             columns={
-                "item": "Item", "section": "Section", "description": "Description",
+                "item": "Item", "description": "Description",
                 "unit": "Unit", "qty": "Qty", "rate": "Rate (HK$)", "Trade": "Trade (HKSMM)",
             }
         )
-        st.dataframe(view, width="stretch", hide_index=True, height=360)
+        st.caption(
+            "All amounts in HK$. Click any column header to sort, or drag a column edge to resize. "
+            "The BOQ section column is in the CSV download."
+        )
+        st.dataframe(
+            view,
+            width="stretch",
+            hide_index=True,
+            height=430,
+            column_config={
+                "Item": st.column_config.TextColumn("Item", width="small", help="Item code from the BOQ"),
+                "Description": st.column_config.TextColumn(
+                    "Description", width="large", help="As written in the BOQ, English and/or Chinese"
+                ),
+                "Unit": st.column_config.TextColumn("Unit", width="small"),
+                "Qty": st.column_config.NumberColumn("Qty", width="small", format="%.2f"),
+                "Rate (HK$)": st.column_config.NumberColumn(
+                    "Rate", width="small", format="%.2f", help="Rate exactly as priced in the BOQ, in HK$"
+                ),
+                "Amount (HK$)": st.column_config.NumberColumn(
+                    "Amount", width="small", format="localized", help="Qty x Rate, in HK$"
+                ),
+                "Trade (HKSMM)": st.column_config.TextColumn(
+                    "Trade (HKSMM)", width="medium", help="Mapped from the description, HKSMM-style"
+                ),
+                "Confidence": st.column_config.ProgressColumn(
+                    "Conf.", min_value=0.0, max_value=1.0, format="%.2f", width="small",
+                    help="How sure the trade classifier is (0-1)",
+                ),
+            },
+        )
         st.download_button(
             "Download screening as CSV",
             data=df.to_csv(index=False).encode("utf-8"),
@@ -375,14 +407,32 @@ if rows:
 
         m_sor = build["matched_sor"] or "no SoR demo match"
         m_sor_rate = f"HK${build['sor_rate']:,.2f}" if build["sor_rate"] is not None else "n/a"
-        st.markdown(
-            f"| Step | Value |\n"
-            f"| --- | --- |\n"
-            f"| Matched SoR demo item | {m_sor} |\n"
-            f"| SoR demo rate | {m_sor_rate} / {build['sor_unit'] or 'n/a'} |\n"
-            f"| Project rate index | {build['project_rate_index']} |\n"
-            f"| BOQ rate | HK${chosen['rate']:,.2f} |\n"
-            f"| Adjusted fair rate | HK${build['adjusted_rate']:,.2f} |\n"
+        ledger = pd.DataFrame(
+            {
+                "Step": [
+                    "Matched SoR demo item",
+                    "SoR demo rate",
+                    "Project rate index",
+                    "BOQ rate",
+                    "Adjusted fair rate",
+                ],
+                "Value": [
+                    m_sor,
+                    f"{m_sor_rate} / {build['sor_unit'] or 'n/a'}",
+                    f"{build['project_rate_index']}",
+                    f"HK${chosen['rate']:,.2f}",
+                    f"HK${build['adjusted_rate']:,.2f}",
+                ],
+            }
+        )
+        st.dataframe(
+            ledger,
+            width="stretch",
+            hide_index=True,
+            column_config={
+                "Step": st.column_config.TextColumn("Step", width="medium"),
+                "Value": st.column_config.TextColumn("Value", width="large"),
+            },
         )
 
         comp = build["components"]
@@ -487,16 +537,14 @@ if rows:
                 "reasons": "No amount withheld on this claim.",
                 "calculation": "Admitted amount matches the claimed amount.",
             })
-            c_claim, c_resp = st.columns(2)
-            with c_claim:
-                st.markdown("**Payment claim**")
+            tab_claim, tab_resp = st.tabs(["📄 Payment claim", "📄 Payment response"])
+            with tab_claim:
                 st.code(claim["text"], language=None)
                 st.download_button(
                     "Download claim (.txt)", data=claim["text"],
                     file_name="payment_claim.txt", mime="text/plain",
                 )
-            with c_resp:
-                st.markdown("**Payment response**")
+            with tab_resp:
                 st.code(response["text"], language=None)
                 st.download_button(
                     "Download response (.txt)", data=response["text"],
@@ -526,7 +574,8 @@ if rows:
     st.markdown('<div class="section-title">🧠 Plain-language review</div>', unsafe_allow_html=True)
     with st.spinner("Writing the plain-language review (free AI, may take a minute)..."):
         review, status = llm_review(len(rows), est["trades"], flags, est["grand_total"])
-    if not status.startswith("llm_ok"):
+    review = (review or "").strip()
+    if not status.startswith("llm_ok") or not review:
         review = fallback_review(flags, est["grand_total"])
         tag = f"rule-based fallback ({status})"
     else:

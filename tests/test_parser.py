@@ -1,11 +1,17 @@
 """Tests for structure-aware BOQ PDF parsing."""
 from pathlib import Path
 
-from reportlab.lib import colors
-from reportlab.lib.pagesizes import A4, landscape
-from reportlab.lib.styles import ParagraphStyle
-from reportlab.lib.units import mm
-from reportlab.platypus import LongTable, Paragraph, SimpleDocTemplate, TableStyle
+import pytest
+
+# reportlab is a dev-only dependency used to synthesise a realistic PDF fixture.
+# Skip cleanly instead of breaking collection when it is not installed.
+pytest.importorskip("reportlab", reason="dev-only dependency: pip install -r requirements-dev.txt")
+
+from reportlab.lib import colors  # noqa: E402
+from reportlab.lib.pagesizes import A4, landscape  # noqa: E402
+from reportlab.lib.styles import ParagraphStyle  # noqa: E402
+from reportlab.lib.units import mm  # noqa: E402
+from reportlab.platypus import LongTable, Paragraph, SimpleDocTemplate, TableStyle  # noqa: E402
 
 from src import parser as parser_module
 from src.parser import parse_csv, parse_pdf

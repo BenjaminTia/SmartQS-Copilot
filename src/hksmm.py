@@ -18,6 +18,16 @@ import unicodedata
 _TRADES = None
 
 
+# Operation outranks material (added 15 Sep 2026). A line that demolishes a brick
+# wall is Demolition work, not Masonry: the verb says what the work is, the noun
+# only says what it is being done to. Without this, multi-word material keywords
+# ("brick wall") collide with action descriptions and win on raw hit count.
+_ACTION_OVERRIDES = [
+    ("DEM", ("demolish", "demolition", "dismantle", "strip out", "break down",
+             "remove existing", "removal of existing", "拆卸", "清拆", "拆毀")),
+]
+
+
 def _load_trades():
     global _TRADES
     if _TRADES is not None:
@@ -62,6 +72,11 @@ def classify_trade(description):
     against the trade names themselves.
     """
     text = _as_text(description).lower()
+    for code, phrases in _ACTION_OVERRIDES:
+        if any(phrase in text for phrase in phrases):
+            row = next((r for r in _load_trades() if r["code"] == code), None)
+            if row is not None:
+                return (row["code"], row["trade_en"], 1.0)
     best = None
     best_hits = 0
     for row in _load_trades():
@@ -88,6 +103,20 @@ def classify_trade(description):
     if best_ratio >= 0.5:
         return (best_name[0], best_name[1], round(best_ratio, 2))
     return (None, "Unclassified", 0.0)
+
+
+def short_trade(code):
+    """Short display name for a trade code (e.g. EXC -> "Excavation").
+
+    Trade names can be long ("Excavation and Earthworks"); a take-off sheet uses
+    the short form. Falls back to "" so callers can print the code alone.
+    """
+    if not code:
+        return ""
+    for row in _load_trades():
+        if row["code"] == code:
+            return row.get("short") or row["trade_en"]
+    return ""
 
 
 def scan_missing_trades(items, exclude=()):

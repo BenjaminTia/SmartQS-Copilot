@@ -84,3 +84,45 @@ if __name__ == "__main__":
             print("ERROR", fn.__name__, "->", repr(e))
     print(f"{len(fns) - failed}/{len(fns)} passed")
     sys.exit(1 if failed else 0)
+
+def test_classify_masonry():
+    code, trade, _ = hksmm.classify_trade("Masonry wall in cement sand mortar 磚牆砌築")
+    assert code == "MAS", code
+    assert trade == "Masonry", trade
+
+
+def test_classify_blockwork():
+    code, _, _ = hksmm.classify_trade("Blockwork wall 100mm 砌塊牆")
+    assert code == "MAS", code
+
+
+def test_classify_door_and_ironmongery():
+    code, _, _ = hksmm.classify_trade("Hollow core door with frame and ironmongery 空心木門連框及五金")
+    assert code == "DOR", code
+
+
+def test_classify_ceiling():
+    code, _, _ = hksmm.classify_trade("Ceiling false ceiling with metal frame")
+    assert code == "CEI", code
+
+
+def test_demolition_outranks_material():
+    """The verb wins: demolishing a brick wall is Demolition, not Masonry."""
+    code, _, _ = hksmm.classify_trade("demolish existing brick wall 300mm thick")
+    assert code == "DEM", code
+    code_zh, _, _ = hksmm.classify_trade("拆卸現有磚牆300毫米厚")
+    assert code_zh == "DEM", code_zh
+
+def test_short_trade_names():
+    """Short forms exist for every trade and stay genuinely short (table columns)."""
+    from src import hksmm
+    rows = hksmm._load_trades()
+    assert len(rows) >= 40
+    for r in rows:
+        short = hksmm.short_trade(r["code"])
+        assert short, r["code"]
+        assert len(short) <= 22, (r["code"], short)
+    assert hksmm.short_trade("EXC") == "Excavation"
+    assert hksmm.short_trade("SUP") == "Sanitary Fittings"
+    assert hksmm.short_trade("") == ""
+    assert hksmm.short_trade("NOPE") == ""
