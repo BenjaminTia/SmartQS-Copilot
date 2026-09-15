@@ -1,3 +1,4 @@
+---
 title: Smart QS Copilot
 emoji: 🏗️
 colorFrom: blue
